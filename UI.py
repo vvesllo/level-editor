@@ -119,7 +119,8 @@ class UICheckBox(BaseUI):
             label: str,
             position: Vector.Vec2,
             size: Vector.Vec2,
-            value
+            key,
+            value: bool
         ):
 
         self.font = pygame.font.SysFont('microsoftsansserif', 20)
@@ -142,6 +143,8 @@ class UICheckBox(BaseUI):
         self.__mark = pygame.Surface(
             (5, size.y)
         )
+        
+        self.__key = key
 
         if value:
             self.__mark.fill(
@@ -200,4 +203,6 @@ class UICheckBox(BaseUI):
         if button and self.__is_hover:
             self.__value = not self.__value
             return self.__value
-        
+    
+    def getKey(self):
+        return self.__key
