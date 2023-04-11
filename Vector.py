@@ -10,14 +10,14 @@ class Vec2:
     def __sub__(self, other):
         return Vec2(self.x - other.x, self.y - other.y)
     
-    def __mul__(self, other):
-        return Vec2(self.x * other.x, self.y * other.y)
+    def __mul__(self, number):
+        return Vec2(self.x * number, self.y * number)
     
-    def __truediv__(self, other):
-        return Vec2(self.x / other.x, self.y / other.y)
+    def __truediv__(self, number):
+        return Vec2(self.x / number, self.y / number)
     
-    def __floordiv__(self, other):
-        return Vec2(self.x // other.x, self.y // other.y)
+    def __floordiv__(self, number):
+        return Vec2(self.x // number, self.y // number)
 
     def __repr__(self) -> str:
         return f"Vec2<{self.x}, {self.y}>"
@@ -25,6 +25,6 @@ class Vec2:
     def get(self):
         return (self.x, self.y)
     
-    @staticmethod
-    def normalize(vector):
-	    return vector / (vector.x ** 2 + vector.y ** 2) ** 0.5
+
+def normalize(vector):
+    return vector / (vector.x ** 2 + vector.y ** 2) ** 0.5
