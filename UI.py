@@ -10,7 +10,7 @@ class UIButton:
             callback_functions
         ):
         
-        arial_font = pygame.font.SysFont('cmmi10', 36)
+        arial_font = pygame.font.SysFont('umeminchos3', 36)
         self.__label = label
         self.__position = position
         self.__surface = pygame.Surface(
@@ -51,6 +51,9 @@ class UIButton:
         else:
             self.__is_hover = False
 
+    def isHovered(self):
+        return self.__is_hover
+    
     def update(self):
         if self.__is_hover:
             self.__surface.fill(

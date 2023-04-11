@@ -22,6 +22,12 @@ class Editor:
 				Vector.Vec2(10, 10), # position
 				Vector.Vec2(150, 70), # size
 				self.open_file
+			),
+			UI.UIButton(
+				"print", # label
+				Vector.Vec2(10, 90), # position
+				Vector.Vec2(150, 70), # size
+				lambda: ("Hello world")
 			)
 		]
 
@@ -53,11 +59,9 @@ class Editor:
 
 	def update(self):
 		mouse_position = pygame.mouse.get_pos()
-		b1, _, _ = pygame.mouse.get_pressed()
 		for ui_element in self.__ui_elements:
-			ui_element.checkHover(mouse_position)
+			ui_element.checkHover(pygame.mouse.get_pos())
 			ui_element.update()
-			print(ui_element.click(b1))
 			
 		pygame.display.flip()
 
@@ -73,6 +77,13 @@ class Editor:
 			match event.type:
 				case pygame.QUIT:
 					self.is_program_run = False
+					break
+				case pygame.MOUSEBUTTONDOWN:
+					b1, _, _ = pygame.mouse.get_pressed()
+					for ui_element in self.__ui_elements:
+						if ui_element.isHovered():
+							print(ui_element.click(b1))
+							self.update()
 					break
 
 	def run(self):
