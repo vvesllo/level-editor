@@ -10,24 +10,37 @@ class Editor:
 		self.window_width = width
 		self.window_height = height
 		self.is_program_run = True
+		self.value = False
+
 		self.initWindow(
 			self.window_width,
 			self.window_height, 
 			title
 		)
-		
+	
 		self.__ui_elements = [
 			UI.UIButton(
 				"Open File", # label
 				Vector.Vec2(10, 10), # position
-				Vector.Vec2(150, 70), # size
+				Vector.Vec2(180, 50), # size
 				self.open_file
+			),
+			UI.UILabel(
+				"Label 1", # label
+				Vector.Vec2(10, 130), # position
+				Vector.Vec2(180, 50), # size
 			),
 			UI.UIButton(
 				"print", # label
-				Vector.Vec2(10, 90), # position
-				Vector.Vec2(150, 70), # size
+				Vector.Vec2(10, 65), # position
+				Vector.Vec2(180, 50), # size
 				lambda: ("Hello world")
+			),
+			UI.UICheckBox(
+				"Show rect", # label
+				Vector.Vec2(195, 65), # position
+				Vector.Vec2(180, 50), # size
+				self.value
 			)
 		]
 
@@ -42,7 +55,7 @@ class Editor:
 					('Level Decoration File', '*.ldf'),
 					('Text Document', '*.txt')
 				),
-			"*.ldf")
+			"*.*")
 		)
 	def ask_filepath_to_open(self, filetypes, default_extension):
 		return filedialog.askopenfilename(
@@ -58,19 +71,32 @@ class Editor:
 		self.window_height = height
 
 	def update(self):
-		mouse_position = pygame.mouse.get_pos()
 		for ui_element in self.__ui_elements:
-			ui_element.checkHover(pygame.mouse.get_pos())
+			if isinstance(ui_element, UI.UIButton) or \
+				isinstance(ui_element, UI.UICheckBox):
+				ui_element.checkHover(pygame.mouse.get_pos())
+
 			ui_element.update()
 			
 		pygame.display.flip()
 
 	def draw(self):
+		self.window.fill("black")
 		for ui_element in self.__ui_elements:
 			self.window.blit(
 				ui_element.getSurface(),
 				ui_element.getPosition().get()
 			)
+
+
+		if self.value:
+			pygame.draw.rect(
+				self.window,
+				pygame.Color("red"),
+				pygame.Rect(200, 200, 60, 60)
+			)
+
+		pygame.display.update()
 
 	def checkEvents(self):
 		for event in pygame.event.get():
@@ -81,9 +107,14 @@ class Editor:
 				case pygame.MOUSEBUTTONDOWN:
 					b1, _, _ = pygame.mouse.get_pressed()
 					for ui_element in self.__ui_elements:
-						if ui_element.isHovered():
-							print(ui_element.click(b1))
-							self.update()
+						if isinstance(ui_element, UI.UIButton):
+							if ui_element.isHovered():
+								print(ui_element.click(b1))
+								self.update()
+						elif isinstance(ui_element, UI.UICheckBox):
+							if ui_element.isHovered():
+								self.value = ui_element.click(b1)
+								self.update()
 					break
 
 	def run(self):
