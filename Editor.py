@@ -1,8 +1,10 @@
 import UI
 import Vector
 import Tile
+import Utilities
+
 import pygame
-from tkinter import filedialog
+import csv
 
 class Editor:
 	def __init__(self, width, height, title):
@@ -24,39 +26,41 @@ class Editor:
 
 
 		self.scroll = Vector.Vec2(0, 0)
+		self.grid_color = pygame.Color(0x59, 0x59, 0x5e)
+		self.grid_width = 4
 
-		self.grid_color = pygame.Color(0xff, 0xff, 0xff, 0x10)
-
+		self.current_tile = 0
 		self.tiles = []
 		self.tile_list = [
 			Tile.Tile(
 				self.tileset,
 				(0, 0, self.cell_size, self.cell_size),
-				Vector.Vec2(0, 0)
+				Vector.Vec2(0, 0),
+				True
 			),
 			Tile.Tile(
 				self.tileset,
 				(self.cell_size, 0, self.cell_size, self.cell_size),
-				Vector.Vec2(0, 0)
+				Vector.Vec2(0, 0),
+				True
 			),
 			Tile.Tile(
 				self.tileset,
 				(0, self.cell_size, self.cell_size, self.cell_size),
-				Vector.Vec2(0, 0)
+				Vector.Vec2(0, 0),
+				False
 			),
 			Tile.Tile(
 				self.tileset,
 				(self.cell_size, self.cell_size, self.cell_size, self.cell_size),
-				Vector.Vec2(0, 0)
+				Vector.Vec2(0, 0),
+				False
 			)
 		]
 		
 		for row in range(self.MAX_ROWS):
-			r = [-1] * self.MAX_COLS
+			r = [None] * self.MAX_COLS
 			self.tiles.append(r)
-
-		for tile in range(0, self.MAX_COLS):
-			self.tiles[self.MAX_ROWS - 1][tile] = 0
 
 
 		self.initWindow(
@@ -73,10 +77,10 @@ class Editor:
 				self.endProgram
 			),
 			UI.UIButton(
-				"Hello world",
+				"Save file",
 				Vector.Vec2(10, 55),
 				Vector.Vec2(110, 40),
-				lambda: ("Hello world")
+				self.saveFile
 			),
 			UI.UICheckBox(
 				"Show grid",
@@ -106,26 +110,17 @@ class Editor:
 			ui_element.update()
 		
 		mouse_position = pygame.mouse.get_pos()
-		b1, _, b3 = pygame.mouse.get_pressed()
+		left_button, middle_button, right_button = pygame.mouse.get_pressed()
 
 		pos = pygame.mouse.get_pos()
-		mouse_col = (pos[0] + self.scroll.x) // self.cell_size
-		mouse_row = (pos[1] + self.scroll.y) // self.cell_size
-
-		mouse_col = int(mouse_col)
-		mouse_row = int(mouse_row)
+		mouse_col = int((pos[0] + self.scroll.x) // self.cell_size)
+		mouse_row = int((pos[1] + self.scroll.y) // self.cell_size)
 
 		if mouse_position[0] > 0 and mouse_position[0] < self.window_width and\
 			mouse_position[1] > 0 and mouse_position[1] < self.window_height:
-			if b1:
-				self.tiles[mouse_row][mouse_col] = (
-					Tile.Tile(
-						pygame.image.load("tileset.png"),
-						(0, 0, self.cell_size, self.cell_size),
-						Vector.Vec2(mouse_col*self.cell_size, mouse_row*self.cell_size)
-					)
-				)
-			elif b3:
+			if left_button:
+				self.tiles[mouse_row][mouse_col] = self.tile_list[self.current_tile]
+			elif right_button:
 				self.tiles[mouse_row][mouse_col] = None
 
 		pygame.display.flip()
@@ -137,7 +132,7 @@ class Editor:
 				self.grid_color,
 				(c * self.cell_size - self.scroll.x, 0),
 				(c * self.cell_size - self.scroll.x, self.window_height),
-				2
+				self.grid_width
 			)
 		for c in range(self.MAX_ROWS + 1):
 			pygame.draw.line(
@@ -145,15 +140,14 @@ class Editor:
 				self.grid_color,
 				(0, c * self.cell_size - self.scroll.y),
 				(self.window_width, c * self.cell_size - self.scroll.y),
-				2
+				self.grid_width
 			)
 
 	def draw(self):
 		# background color
 		self.window.fill(pygame.Color(0x1A, 0x1A, 0x20))
 		
-		if self.values["show_grid"]:
-			self.drawGrid()
+		if self.values["show_grid"]: self.drawGrid()
 
 		for y, row in enumerate(self.tiles):
 			for x, tile in enumerate(row):
@@ -211,8 +205,6 @@ class Editor:
 			if self.scroll.y < self.MAX_ROWS * self.cell_size - (self.window_height / self.cell_size) * self.cell_size:
 				self.scroll.y += self.speed
 
-		
-
 	def run(self):
 		while self.is_program_run:
 			self.clock.tick(self.FPS) # frame rate
@@ -221,32 +213,41 @@ class Editor:
 			self.update()
 			self.draw()
 			
-	
+
+
+	# other
+	# other
+	# other
+	# other
+	# other
 
 
 
-	# other
-	# other
-	# other
-	# other
-	# other
-
-	def openFile(self):
-		return (
-			self.ask_filepath_to_open(
-				(
-					('All Files', '*.*'),
-					('Level Colliders File', '*.lcf'),
-					('Level Decoration File', '*.ldf'),
-					('Text Document', '*.txt')
-				),
-			"*.*")
+	def saveFile(self):
+		"""Save type: 
+			layer1;position_x1;position_y1;rect_x1;rect_y1;rect_w1;rect_h1;is_solid1
+			layer2;position_x2;position_y2;rect_x2;rect_y2;rect_w2;rect_h2;is_solid2
+		..."""
+		filepath = Utilities.askFilepathToSave(
+			(
+				('All Files', '*.*'),
+				('CSV File', '*.csv'),
+				('Text Document', '*.txt')
+			),
+			"*.*"
 		)
-	def askFilepathToOpen(self, filetypes, default_extension):
-		return filedialog.askopenfilename(
-			filetypes=filetypes,
-			defaultextension=default_extension
-		)
+		
+		if not filepath: return
+
+		level_str = ""
+		for line in self.tiles:
+			for tile in line:
+				if tile:
+					level_str += f"""0;{tile.getPosition().x};{tile.getPosition().y};{tile.getRect()[0]};{tile.getRect()[1]};{tile.getRect()[2]};{tile.getRect()[3]};{int(tile.isSolid())}
+					"""
+
+		with open(filepath, 'w') as csv_file:			
+			csv_file.write(level_str)
 
 	def endProgram(self):
 		self.is_program_run = False

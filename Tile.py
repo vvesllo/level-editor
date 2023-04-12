@@ -7,11 +7,13 @@ class Tile:
         self,
         image: pygame.Surface,
         rect: tuple,
-        position: Vector.Vec2
+        position: Vector.Vec2,
+        is_solid: bool
     ):
         self.surface = image.subsurface(rect)
         self.rect = rect
         self.position = position
+        self.is_solid = is_solid
 
     def getRect(self):
         return self.rect
@@ -27,3 +29,6 @@ class Tile:
     
     def move(self, coords: Vector.Vec2):
         self.position += coords
+    
+    def isSolid(self):
+        return self.is_solid
