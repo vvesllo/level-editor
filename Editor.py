@@ -7,26 +7,57 @@ from tkinter import filedialog
 class Editor:
 	def __init__(self, width, height, title):
 		pygame.init()
-		self.FPS = 60
 		self.window_width = width
 		self.window_height = height
 		self.is_program_run = True
 		self.show_menu = True
-		self.speed = 0.2
-		self.camera_position = Vector.Vec2(0, 0)
-		self.camera_velocity = Vector.Vec2(0, 0)
-		self.values = {
-			"show_grid": True,
-			"show_rect": True
-		}
+		self.speed = 20
 		self.cell_size = 64
 		self.tileset = pygame.image.load("tileset.png")
+		self.values = {
+			"show_grid": True
+		}
+
+		self.FPS = 60
+		self.MAX_COLS = 150
+		self.MAX_ROWS = 100
+
+
+		self.scroll = Vector.Vec2(0, 0)
+
+		self.grid_color = pygame.Color(0xff, 0xff, 0xff, 0x10)
 
 		self.tiles = []
-		for _ in range(64):
-			self.tiles.append(
-				[None for _ in range(64)]
+		self.tile_list = [
+			Tile.Tile(
+				self.tileset,
+				(0, 0, self.cell_size, self.cell_size),
+				Vector.Vec2(0, 0)
+			),
+			Tile.Tile(
+				self.tileset,
+				(self.cell_size, 0, self.cell_size, self.cell_size),
+				Vector.Vec2(0, 0)
+			),
+			Tile.Tile(
+				self.tileset,
+				(0, self.cell_size, self.cell_size, self.cell_size),
+				Vector.Vec2(0, 0)
+			),
+			Tile.Tile(
+				self.tileset,
+				(self.cell_size, self.cell_size, self.cell_size, self.cell_size),
+				Vector.Vec2(0, 0)
 			)
+		]
+		
+		for row in range(self.MAX_ROWS):
+			r = [-1] * self.MAX_COLS
+			self.tiles.append(r)
+
+		for tile in range(0, self.MAX_COLS):
+			self.tiles[self.MAX_ROWS - 1][tile] = 0
+
 
 		self.initWindow(
 			self.window_width,
@@ -53,13 +84,6 @@ class Editor:
 				Vector.Vec2(110, 40),
 				"show_grid",
 				self.values["show_grid"]
-			),
-			UI.UICheckBox(
-				"Show rect",
-				Vector.Vec2(110+15, 55),
-				Vector.Vec2(110, 40),
-				"show_rect",
-				self.values["show_rect"]
 			)
 		)
 
@@ -84,8 +108,13 @@ class Editor:
 		mouse_position = pygame.mouse.get_pos()
 		b1, _, b3 = pygame.mouse.get_pressed()
 
-		mouse_col = (mouse_position[0] - self.camera_position.y) // self.cell_size
-		mouse_row = (mouse_position[1] - self.camera_position.y) // self.cell_size
+		pos = pygame.mouse.get_pos()
+		mouse_col = (pos[0] + self.scroll.x) // self.cell_size
+		mouse_row = (pos[1] + self.scroll.y) // self.cell_size
+
+		mouse_col = int(mouse_col)
+		mouse_row = int(mouse_row)
+
 		if mouse_position[0] > 0 and mouse_position[0] < self.window_width and\
 			mouse_position[1] > 0 and mouse_position[1] < self.window_height:
 			if b1:
@@ -99,21 +128,39 @@ class Editor:
 			elif b3:
 				self.tiles[mouse_row][mouse_col] = None
 
-
 		pygame.display.flip()
 
-	def draw(self):
-		self.window.fill("black")
+	def drawGrid(self):
+		for c in range(self.MAX_COLS + 1):
+			pygame.draw.line(
+				self.window,
+				self.grid_color,
+				(c * self.cell_size - self.scroll.x, 0),
+				(c * self.cell_size - self.scroll.x, self.window_height),
+				2
+			)
+		for c in range(self.MAX_ROWS + 1):
+			pygame.draw.line(
+				self.window,
+				self.grid_color,
+				(0, c * self.cell_size - self.scroll.y),
+				(self.window_width, c * self.cell_size - self.scroll.y),
+				2
+			)
 
-		for line in self.tiles:
-			for tile in line:
-				if tile:
-					tile.setPosition(
-						tile.getPosition() + self.camera_position
-					)
+	def draw(self):
+		# background color
+		self.window.fill(pygame.Color(0x1A, 0x1A, 0x20))
+		
+		if self.values["show_grid"]:
+			self.drawGrid()
+
+		for y, row in enumerate(self.tiles):
+			for x, tile in enumerate(row):
+				if isinstance(tile, Tile.Tile):
 					self.window.blit(
 						tile.getSurface(),
-						tile.getPosition().get()
+						(x * self.cell_size - self.scroll.x, y * self.cell_size - self.scroll.y)
 					)
 
 		if self.show_menu:
@@ -122,13 +169,6 @@ class Editor:
 					ui_element.getSurface(),
 					ui_element.getPosition().get()
 				)
-		if self.values["show_rect"]:
-			pygame.draw.rect(
-				self.window,
-				pygame.Color("red"),
-				(200, 200, 50, 50)
-			)
-
 		pygame.display.update()
 
 	def checkEvents(self):
@@ -157,16 +197,19 @@ class Editor:
 
 	def checkKeys(self):
 		pressed_keys = pygame.key.get_pressed()
-		self.camera_position = Vector.Vec2(0, 0)
 		if pressed_keys[pygame.K_a]:
-			self.camera_position.x += self.speed
+			if self.scroll.x > 0:
+				self.scroll.x -= self.speed
 		if pressed_keys[pygame.K_d]:
-			self.camera_position.x -= self.speed
+			if self.scroll.x < self.MAX_COLS * self.cell_size - (self.window_width / self.cell_size) * self.cell_size:
+				self.scroll.x += self.speed
 
 		if pressed_keys[pygame.K_w]:
-			self.camera_position.y += self.speed
+			if self.scroll.y > 0:
+				self.scroll.y -= self.speed
 		if pressed_keys[pygame.K_s]:
-			self.camera_position.y -= self.speed
+			if self.scroll.y < self.MAX_ROWS * self.cell_size - (self.window_height / self.cell_size) * self.cell_size:
+				self.scroll.y += self.speed
 
 		
 
