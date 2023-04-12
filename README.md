@@ -1,3 +1,3 @@
 # Level Editor
 
-![image] preview.png
+![](preview.png)
