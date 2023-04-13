@@ -18,7 +18,8 @@ class Editor:
 		self.mouse_button_down = False
 		self.tileset = pygame.image.load("tileset.png")
 		self.values = {
-			"show_grid": True
+			"show_grid": True,
+			"is_top_layer": False
 		}
 
 		self.FPS = 60
@@ -32,6 +33,7 @@ class Editor:
 
 		self.current_tile = 0
 		self.tiles = []
+		self.top_tiles = []
 		self.tiles_textures_list = [
 			Tile.Tile(
 				self.tileset,
@@ -66,7 +68,7 @@ class Editor:
 				(self.cell_size*2, 0, self.cell_size, self.cell_size),
 				Vector.Vec2(0, 0),
 				True,
-				Tile.TileTypeEnum.END
+				Tile.TileTypeEnum.DANGER
 			),
 			Tile.Tile(
 				self.tileset,
@@ -80,8 +82,8 @@ class Editor:
 				self.tileset,
 				(0, self.cell_size*2, self.cell_size, self.cell_size),
 				Vector.Vec2(0, 0),
-				False,
-				Tile.TileTypeEnum.DANGER
+				True,
+				Tile.TileTypeEnum.END
 			),
 			Tile.Tile(
 				self.tileset,
@@ -89,6 +91,13 @@ class Editor:
 				Vector.Vec2(0, 0),
 				False,
 				Tile.TileTypeEnum.PLAYER
+			),
+			Tile.Tile(
+				self.tileset,
+				(self.cell_size*2, self.cell_size*2, self.cell_size, self.cell_size),
+				Vector.Vec2(0, 0),
+				False,
+				Tile.TileTypeEnum.DEFAULT
 			)
 		]
 
@@ -97,7 +106,8 @@ class Editor:
 			self.tiles_textures_list
 		))
 
-		self.createEnptyMap()
+		self.createEmptyMap()
+		self.createEmptyTopMap()
 
 		self.initWindow(
 			self.window_width,
@@ -105,6 +115,13 @@ class Editor:
 			title
 		)
 	
+		self.screen_surface = pygame.Surface(
+			(width, height),
+			pygame.SRCALPHA
+		).convert_alpha()
+		self.screen_surface.fill(
+			(0x11, 0x11, 0x11, 0x4a)
+		)
 		self.__ui_elements = [
 			UI.UIButton(
 				"Exit",
@@ -130,6 +147,13 @@ class Editor:
 				Vector.Vec2(110, 40),
 				"show_grid",
 				self.values["show_grid"]
+			),
+			UI.UICheckBox(
+				"Top Layer",
+				Vector.Vec2(110+15, 55),
+				Vector.Vec2(110, 40),
+				"is_top_layer",
+				self.values["is_top_layer"]
 			)
 		]
 		help_text = """\
@@ -157,10 +181,15 @@ Tab-hide menu""".split('\n')
 		self.window_width = width
 		self.window_height = height
 
-	def createEnptyMap(self):
+	def createEmptyMap(self):
 		for row in range(self.MAX_ROWS):
 			r = [None] * self.MAX_COLS
 			self.tiles.append(r)
+
+	def createEmptyTopMap(self):
+		for row in range(self.MAX_ROWS):
+			r = [None] * self.MAX_COLS
+			self.top_tiles.append(r)
 
 
 	def update(self):
@@ -182,9 +211,16 @@ Tab-hide menu""".split('\n')
 			if mouse_position[0] > 0 and mouse_position[0] < self.window_width and\
 				mouse_position[1] > 0 and mouse_position[1] < self.window_height:
 				if left_button:
-					self.tiles[mouse_row][mouse_col] = self.tile_list[self.current_tile]
+					if not self.values["is_top_layer"]:
+						self.tiles[mouse_row][mouse_col] = self.tile_list[self.current_tile]
+					else:
+						self.top_tiles[mouse_row][mouse_col] = self.tile_list[self.current_tile]
+
 				elif right_button:
-					self.tiles[mouse_row][mouse_col] = None
+					if not self.values["is_top_layer"]:
+						self.tiles[mouse_row][mouse_col] = None
+					else:
+						self.top_tiles[mouse_row][mouse_col] = None
 
 		pygame.display.flip()
 
@@ -206,19 +242,37 @@ Tab-hide menu""".split('\n')
 				self.grid_width
 			)
 
-	def draw(self):
-		# background color
-		self.window.fill(pygame.Color(0x1A, 0x1A, 0x20))
-		
-		if self.values["show_grid"]: self.drawGrid()
-
-		for y, row in enumerate(self.tiles):
+	def drawLayer(self, tiles):
+		for y, row in enumerate(tiles):
 			for x, tile in enumerate(row):
 				if tile:
 					self.window.blit(
 						tile[1].getSurface(),
 						(x * self.cell_size - self.scroll.x, y * self.cell_size - self.scroll.y)
 					)
+
+	def draw(self):
+		# background color
+		self.window.fill(pygame.Color(0x1A, 0x1A, 0x20))
+		
+
+		if self.values["is_top_layer"]:
+			self.drawLayer(self.tiles)
+			self.window.blit(
+				self.screen_surface,
+				(0, 0)
+			)
+			if self.values["show_grid"]: self.drawGrid()
+			self.drawLayer(self.top_tiles)
+						
+		else:
+			self.drawLayer(self.top_tiles)
+			self.window.blit(
+				self.screen_surface,
+				(0, 0)
+			)
+			if self.values["show_grid"]: self.drawGrid()
+			self.drawLayer(self.tiles)
 
 		if self.show_menu:
 			for ui_element in self.__ui_elements:
@@ -313,9 +367,13 @@ Tab-hide menu""".split('\n')
 		if not filepath: return
 
 		level = []
+		map_width = 0
+		map_height = 0
 		for y, line in enumerate(self.tiles):
 			for x, tile in enumerate(line):
 				if tile:
+					map_width = max(x, map_width)
+					map_height = max(y, map_height)
 					level.append(f"""0;\
 {x};\
 {y};\
@@ -326,9 +384,26 @@ Tab-hide menu""".split('\n')
 {int(tile[1].isSolid())};\
 {(tile[1].getType())};\
 {tile[0]}""")
-
+		for y, line in enumerate(self.top_tiles):
+			for x, tile in enumerate(line):
+				if tile:
+					map_width = max(x, map_width)
+					map_height = max(y, map_height)
+					level.append(f"""1;\
+{x};\
+{y};\
+{tile[1].getRect()[0]};\
+{tile[1].getRect()[1]};\
+{tile[1].getRect()[2]};\
+{tile[1].getRect()[3]};\
+{int(tile[1].isSolid())};\
+{(tile[1].getType())};\
+{tile[0]}""")
+		config_text = f"{map_width+1}\n{map_height+1}\n[SECONDS]"
 		with open(filepath, 'w') as csv_file:			
 			csv_file.write("\n".join(level))
+		with open(".config", 'w') as config_file:			
+			config_file.write(config_text)
 		return
 
 	def openFile(self):
@@ -342,13 +417,17 @@ Tab-hide menu""".split('\n')
 		)
 		
 		if not filepath: return
-		self.createEnptyMap()
+		self.createEmptyMap()
+		self.createEmptyTopMap()
 		with open(filepath, 'r') as csv_file:
 			lines = csv_file.read().split('\n')
 
 		for line in lines:
 			numbers = line.split(';')
-			self.tiles[int(numbers[2])][int(numbers[1])] = self.tile_list[int(numbers[9])]
+			if numbers[0] == '0':
+				self.tiles[int(numbers[2])][int(numbers[1])] = self.tile_list[int(numbers[9])]
+			else:
+				self.top_tiles[int(numbers[2])][int(numbers[1])] = self.tile_list[int(numbers[9])]
 		return
 	
 	def endProgram(self):
