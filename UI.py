@@ -4,10 +4,22 @@ import pygame
 class BaseUI:
     position = Vector.Vec2(0, 0)
     label = "NULL"
-    font = ''
     text = None
-    bg_color = pygame.Color(0xaa, 0xaa, 0xaa)
+    font_name = 'microsoftsansserif'
+    font_size = 20
     
+    hover_color = (0xfa, 0xfa, 0xfa, 0xff)
+    base_color = (0xaa, 0xaa, 0xaa, 0xaa)
+
+    def createSurface(self, size):
+        self.surface = pygame.Surface(
+            (size.x, size.y),
+            pygame.SRCALPHA
+            ).convert_alpha()
+        self.surface.fill(
+            self.base_color
+        )
+
     def setPosition(self, position: Vector.Vec2):
         self.position = position
 
@@ -32,14 +44,12 @@ class UIButton(BaseUI):
             callback_functions
         ):
 
-        self.font = pygame.font.SysFont('microsoftsansserif', 20)
+        self.createSurface(size)
+
+        self.font = pygame.font.SysFont(self.font_name, self.font_size)
         self.label = label
         self.position = position
 
-        self.surface = pygame.Surface(
-            (size.x, size.y)
-        )
-        self.surface.fill(pygame.Color("grey"))
         self.text = self.font.render(
             label,
             False,
@@ -66,12 +76,13 @@ class UIButton(BaseUI):
     def update(self):
         if self.__is_hover:
             self.surface.fill(
-                pygame.Color("white")
+                self.hover_color
             )
         else:
             self.surface.fill(
-                pygame.Color("grey")
+                self.base_color
             )
+            
         self.surface.blit(
             self.text,
             self.__text_center
@@ -81,7 +92,7 @@ class UIButton(BaseUI):
         if button and self.__is_hover:
             self.surface.fill("white")
             return self.__callback_functions()
-        
+
 class UILabel(BaseUI):
     def __init__(
             self,
@@ -90,14 +101,12 @@ class UILabel(BaseUI):
             size: Vector.Vec2
         ):
         
-        self.font = pygame.font.SysFont('microsoftsansserif', 20)
+        self.createSurface(size)
+        
+        self.font = pygame.font.SysFont(self.font_name, self.font_size)
         self.label = label
         self.position = position
 
-        self.surface = pygame.Surface(
-            (size.x, size.y)
-        )
-        self.surface.fill(pygame.Color(self.bg_color))
         self.text = self.font.render(
             label,
             False,
@@ -123,14 +132,12 @@ class UICheckBox(BaseUI):
             value: bool
         ):
 
-        self.font = pygame.font.SysFont('microsoftsansserif', 20)
+        self.createSurface(size)
+
+        self.font = pygame.font.SysFont(self.font_name, self.font_size)
         self.label = label
         self.position = position
-
-        self.surface = pygame.Surface(
-            (size.x, size.y)
-        )
-        self.surface.fill(pygame.Color("grey"))
+        self.surface.fill((0xaa, 0xaa, 0xaa, 50))
         self.text = self.font.render(
             label,
             False,
@@ -175,12 +182,13 @@ class UICheckBox(BaseUI):
     def update(self):
         if self.__is_hover:
             self.surface.fill(
-                pygame.Color("white")
+                self.hover_color
             )
         else:
             self.surface.fill(
-                pygame.Color("grey")
+                self.base_color
             )
+
         self.surface.blit(
             self.text,
             self.__text_center
@@ -202,7 +210,7 @@ class UICheckBox(BaseUI):
     def click(self, button: bool):
         if button and self.__is_hover:
             self.__value = not self.__value
-            return self.__value
+        return self.__value
     
     def getKey(self):
         return self.__key

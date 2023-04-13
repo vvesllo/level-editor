@@ -1,6 +1,16 @@
 import Vector
-import pygame
 
+import pygame
+import enum
+
+class TileTypeEnum:
+    DEFAULT=0
+    SLOPE_LEFT=1
+    SLOPE_RIGHT=2
+    DANGER=3
+    JUMPER=4
+    END=5
+    PLAYER=6
 
 class Tile:
     def __init__(
@@ -8,12 +18,14 @@ class Tile:
         image: pygame.Surface,
         rect: tuple,
         position: Vector.Vec2,
-        is_solid: bool
+        is_solid: bool,
+        type: int
     ):
         self.surface = image.subsurface(rect)
         self.rect = rect
         self.position = position
         self.is_solid = is_solid
+        self.type = type
 
     def getRect(self):
         return self.rect
@@ -32,3 +44,7 @@ class Tile:
     
     def isSolid(self):
         return self.is_solid
+
+    def getType(self):
+        return self.type
+
